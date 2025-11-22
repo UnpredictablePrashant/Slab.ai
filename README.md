@@ -1,20 +1,114 @@
 # Slab.ai
 
-## Environment Configuration
+Slab.ai comprises a React/Vite frontend (`frontend/`) plus three Node.js microservices (`backend/projectService`, `backend/paymentService`, `backend/userService`). It requires MongoDB, Redis, AWS S3, and Razorpay.
 
-`.env` for each services in backend
+## Prerequisites
+
+- Node.js 18+ and npm 9+ (for local runs)
+- Docker + Docker Compose (for containerized runs)
+- MongoDB (default `mongodb://localhost:27017/slabai` locally)
+- **Redis** (`redis://localhost:6379` locally; used by projectService)
+- AWS S3 bucket + credentials (project assets and downloadable bundles)
+- Razorpay account (public key + secret)
+
+## Environment Variables
+
+Create a `.env` inside each backend service folder. Template (adjust per service):
 
 ```bash
-MONGO_URI="mongodb://localhost:27017/slabai"
-PORT=3003
-RAZORPAY_KEY_ID="rzp_test_a6CEBoBbltCvzC"
-RAZORPAY_KEY_SECRET="bq1a2NzTCviAwGeNCw9pHg43"
-AWS_SECRET_ACCESS_KEY="asfasdf"
-AWS_ACCESS_KEY_ID="asdsaf"
+MONGO_URI="mongodb://localhost:27017/slabai" # use mongodb://mongo:27017/slabai in Docker
+PORT=3003                                    # change per service
+RAZORPAY_KEY_ID="rzp_test_xxxx"
+RAZORPAY_KEY_SECRET="xxxxx"
+AWS_SECRET_ACCESS_KEY="xxxxx"
+AWS_ACCESS_KEY_ID="xxxxx"
 AWS_REGION="ap-south-1"
 S3_BUCKET_NAME="slabai"
 DOWNLOAD_URL="http://localhost:3003"
+REDIS_URL="redis://localhost:6379"           # only projectService uses this
+# projectService admin auth
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="changeMe"
+ADMIN_JWT_SECRET="super-secret-key"
+# ADMIN_TOKEN_TTL_SECONDS=86400
 ```
+
+- **projectService**: needs Mongo/S3, `REDIS_URL`, and admin credentials above.
+- **paymentService**: needs Mongo/S3, Razorpay keys.
+- **userService**: needs Mongo only.
+
+Frontend: copy `frontend/.env.example` to `frontend/.env` and set:
+
+```bash
+VITE_PROJECT_SERVICE_URL=http://localhost:3002
+VITE_PAYMENT_SERVICE_URL=http://localhost:3003
+VITE_USER_SERVICE_URL=http://localhost:3001
+VITE_RAZORPAY_KEY_ID=rzp_test_xxxx   # public key only
+```
+
+> For Docker Compose, use `mongodb://mongo:27017/slabai` and `redis://redis:6379` in the backend `.env` files so containers can reach each other.
+
+## Local (non-Docker) Run
+
+1. Start MongoDB and Redis locally.
+2. Configure `.env` in each service folder and `frontend/.env`.
+3. In four terminals:
+   - **Project catalog / assets**
+     ```bash
+     cd backend/projectService
+     npm install
+     node index.js   # or npm run dev if added
+     ```
+   - **Payments + download streaming**
+     ```bash
+     cd backend/paymentService
+     npm install
+     node index.js
+     ```
+   - **User leads / contact intake**
+     ```bash
+     cd backend/userService
+     npm install
+     node index.js
+     ```
+   - **Frontend**
+     ```bash
+     cd frontend
+     npm install
+     npm run dev -- --host --port 5173   # http://localhost:5173
+     ```
+4. Admin login is at `http://localhost:5173/admin/login` using the credentials from `backend/projectService/.env`. Project creation lives at `/admin/projects`.
+
+## Dockerfiles
+
+- `backend/projectService/Dockerfile`
+- `backend/paymentService/Dockerfile`
+- `backend/userService/Dockerfile`
+- `frontend/Dockerfile`
+
+Backend images expose their respective ports (3002/3003/3001). The frontend image builds static assets and serves them via `npm run preview` on port `4173`.
+
+## Docker Compose (one-command stack)
+
+`docker-compose.yml` at the repo root runs MongoDB, Redis, all backend services, and the frontend.
+
+1. Ensure backend `.env` files use `mongodb://mongo:27017/slabai` and `redis://redis:6379` (projectService).
+2. Build and start:
+   ```bash
+   docker compose build
+   docker compose up
+   ```
+3. Access:
+   - Frontend: http://localhost:4173
+   - Project service: http://localhost:3002
+   - Payment service: http://localhost:3003
+   - User service: http://localhost:3001
+   - MongoDB: localhost:27017 (volume-backed)
+   - Redis: localhost:6379 (volume-backed)
+
+Stop with `docker compose down` (add `-v` to remove volumes).
+
+---
 
 ## User Service API Documentation
 

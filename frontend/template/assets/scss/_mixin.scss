@@ -1,6 +1,0 @@
-// Background Image Mixin
-@mixin bg_image_property($bg_repeat: no-repeat, $bg_size: cover, $bg_position: center center) {
-	background-size: $bg_size;
-	background-repeat: $bg_repeat;
-	background-position: $bg_position;
-}

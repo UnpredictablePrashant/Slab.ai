@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const projectController = require('../controllers/project.controller');
 const { upload } = require('../utils/s3config');
+const requireAdminAuth = require('../middlewares/requireAdminAuth');
 
 
 // CRUD routes
-router.post('/',upload.single('image'), projectController.createProject);
-router.put('/:id', projectController.updateProject);
-router.delete('/:id', projectController.deleteProject);
+router.post('/', requireAdminAuth, upload.single('image'), projectController.createProject);
+router.put('/:id', requireAdminAuth, projectController.updateProject);
+router.delete('/:id', requireAdminAuth, projectController.deleteProject);
 
 // Listing and searching
 router.get('/', projectController.getAllProjects);

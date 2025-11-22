@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  project-service:
+    build: ./backend/projectService
+    env_file:
+      - ./backend/projectService/.env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/slabai
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+
+  payment-service:
+    build: ./backend/paymentService
+    env_file:
+      - ./backend/paymentService/.env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/slabai
+    depends_on:
+      - mongo
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  user-service:
+    build: ./backend/userService
+    env_file:
+      - ./backend/userService/.env
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/slabai
+    depends_on:
+      - mongo
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - project-service
+      - payment-service
+      - user-service
+    ports:
+      - "4173:4173"
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:
